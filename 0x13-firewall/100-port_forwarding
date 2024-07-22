@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# the firewall redirects port 8080/TCP to port 80/TCP. it also creates a backup file too.
+
+sudo ufw status | grep -q "status: active"
+if [ $? -ne 0 ];then
+echo "Enabling ufw...."
+sudo ufw enable
+fi
+
+# Allow ports 80 and 8080
+echo"Allowing ports 80 and 8080" 
+sudo ufw allow 80/tcp
+sudo ufw allow 8080/tcp
+
+#Backing the original before .rules file
+echo "Backing up /etc/ufw/before.rules to /etc/ufw/before.rules.bak..."
+sudo cp /etc/ufw/before.rules /etc/ufw/before.rules.bak
+
+sudo tee -a  /etc/ufw/before.rules > /dev/null << EOF 
+# Redirect port 8080 to 80
+*nat
+:PREROUTING ACCEPT [0:0]
+-A PREROUTING -p tcp --dport 8080 -j REDIRECT --to-port 80
+COMMIT
+EOF
+
+# Restart UFW to apply changes
+echo "Restarting UFW to apply changes..."
+sudo ufw disable
+sudo ufw enable
+
+echo "Port redirection from 8080 to 80 has been configured."
